@@ -1,13 +1,14 @@
 import angular from 'angular';
 import uiRouter from 'angular-ui-router';
 import homeComponent from './home.component';
+import pixi from 'pixi.js';
 
 let homeModule = angular.module('home', [
   uiRouter
 ])
 
 .config(($stateProvider, $urlRouterProvider) => {
-  "ngInject";
+  'ngInject';
 
   $urlRouterProvider.otherwise('/');
 
@@ -21,5 +22,7 @@ let homeModule = angular.module('home', [
 .component('home', homeComponent)
   
 .name;
+
+console.log(pixi);
 
 export default homeModule;
