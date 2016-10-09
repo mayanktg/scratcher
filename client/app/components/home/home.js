@@ -3,13 +3,12 @@ import uiRouter from 'angular-ui-router';
 import homeComponent from './home.component';
 import PIXI from 'pixi.js';
 // import {particles} from 'pixi-particles';
-// import uuid from 'uuid';
+import uuid from 'uuid';
 import lodash from 'lodash';
 import constants from '../../config/constants';
-import InverseDrawingMask from '../../config/inverseDrawingMask';
 
-let configParticle = constants.configParticle;
-const STROKE_COLOUR = "black";
+// let configParticle = constants.configParticle;
+const STROKE_COLOUR = constants.backgroundColor;
 const STROKE_WIDTH = 20;
 
 let homeModule = angular.module('home', [
@@ -39,8 +38,9 @@ console.log(windowWidth, windowHeight);
 
 let resultBoxesOpenedCount = 0;
 
-function uniqueIndexGenerator(min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
+function uniqueImageGenerator(min, max) {
+  var number = uuid.v4().split('-')[0].match(/\d/g).join('');
+  return ( number % 2 == 0 ) ? constants.loserBackgroundImg : constants.winnerBackgroundImg;
 }
 
 let renderer = PIXI.autoDetectRenderer(windowWidth, windowHeight,
@@ -55,7 +55,7 @@ var stage = new PIXI.Container();
 stage.interactive = true;
 let gap = constants.GRID_GAP;
 let xPos = 0;
-let yPos = 0;
+let yPos = 10;
 let xJump = gap;
 let yJump = gap;
 let boxWidth = ( windowWidth - ( gap * 4 ) ) / 3;
@@ -95,7 +95,7 @@ function generateGrids() {
       mainContainer[indexX][indexY].alpha = 1;
 
       // Background Image with choice of loser / winner.
-      grids[indexX][indexY] = PIXI.Sprite.fromImage(constants.loserBackgroundImg);
+      grids[indexX][indexY] = PIXI.Sprite.fromImage(uniqueImageGenerator(indexX, indexY));
       grids[indexX][indexY].cacheAsBitmapboolean = true;
       grids[indexX][indexY].interactive = true;
       grids[indexX][indexY].indexX = indexX;
@@ -152,13 +152,13 @@ function generateGrids() {
   }
 
   // Pick three random elements and change their isResult key to true
-  for (let index = 0; index < constants.GRID_RESULT_COUNT; index++) {
-    let uniqueIndexX = uniqueIndexGenerator(0, constants.GRID_X_COUNT);
-    let uniqueIndexY = uniqueIndexGenerator(0, constants.GRID_Y_COUNT);
-    mainContainer[uniqueIndexX][uniqueIndexY].isResult = true;
-    mainContainer[uniqueIndexX][uniqueIndexY].image = constants.winnerBackgroundImg;
-    mainContainer[uniqueIndexX][uniqueIndexY].text = 'W';
-  }
+  // for (let index = 0; index < constants.GRID_RESULT_COUNT; index++) {
+  //   let uniqueIndexX = uniqueIndexGenerator(0, constants.GRID_X_COUNT);
+  //   let uniqueIndexY = uniqueIndexGenerator(0, constants.GRID_Y_COUNT);
+  //   mainContainer[uniqueIndexX][uniqueIndexY].isResult = true;
+  //   mainContainer[uniqueIndexX][uniqueIndexY].image = constants.winnerBackgroundImg;
+  //   mainContainer[uniqueIndexX][uniqueIndexY].text = 'W';
+  // }
   console.log(mainContainer);
   return grids;
 }
@@ -191,7 +191,6 @@ function brush(event) {
 
   drawMouseLine(indexX, indexY);
 }
-
 
 function mouseover(mouseData) {
   let indexX = mouseData.target.indexX;

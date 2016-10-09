@@ -66,8 +66,7 @@ const constants = {
   defaultBoxWidth: 100,
   winnerBackgroundImg: '/../../assets/img/winner.jpg',
   loserBackgroundImg: '/../../assets/img/loser.jpg',
-  brushImg: '/../../assets/img/rsz_1brush.png',
-  scratchImg: '/../../assets/img/shot.png',
+  scratchImg: '/../../assets/img/scratch.jpg',
   particleImg: '/../../assets/img/particle.png',
   brushSize: 50
 }
