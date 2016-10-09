@@ -6,6 +6,7 @@ import {particles} from 'pixi-particles';
 import uuid from 'uuid';
 import lodash from 'lodash';
 import constants from '../../config/constants';
+import InverseDrawingMask from '../../config/InverseDrawingMask';
 
 let homeModule = angular.module('home', [
   uiRouter
@@ -32,23 +33,22 @@ const STROKE_COLOUR = constants.brushColor;
 const STROKE_WIDTH = 20;
 
 //setup Pixi renderer
-let windowWidth = window.innerWidth;
-let windowHeight = window.innerHeight;
+let windowWidth = document.body.scrollWidth;
+let windowHeight = document.body.scrollHeight;
 console.log(windowWidth, windowHeight);
 
 let resultBoxesOpenedCount = 0;
 
 function uniqueImageGenerator(min, max) {
+  // Take first part of the UUID, strip of the string and form a unique random number.
   var number = uuid.v4().split('-')[0].match(/\d/g).join('');
   return ( number % 2 == 0 ) ? constants.loserBackgroundImg : constants.winnerBackgroundImg;
 }
 
 let renderer = PIXI.autoDetectRenderer(windowWidth, windowHeight,
-                                      {'backgroundColor' : constants.backgroundColor});
+                                      {'backgroundColor': constants.backgroundColor});
 renderer.interactive = true;
 document.body.appendChild(renderer.view);
-console.log(renderer);
-
 
 // Create a PIXI container.
 var stage = new PIXI.Container();
@@ -59,7 +59,6 @@ let yPos = 10;
 let xJump = gap;
 let yJump = gap;
 let boxWidth = ( windowWidth - ( gap * 4 ) ) / 3;
-console.log(boxWidth);
 if (windowWidth > windowHeight) {
   boxWidth = constants.defaultBoxWidth;
 }
@@ -71,7 +70,9 @@ let grids = [[], [], []];
 // Scratcher
 let gridScratches = [[], [], []];
 // Overlay sprite
+let drawingMask = [[], [], []];
 let alphaSprite = [[], [], []];
+let alpha = [[], [], []];
 let particleViews = [[], [], []];
 // Generator function to set three objects with same values and rest other as same
 function generateGrids() {
@@ -84,15 +85,10 @@ function generateGrids() {
       mainContainer[indexX][indexY].height = boxWidth;
       mainContainer[indexX][indexY].width = boxWidth;
       mainContainer[indexX][indexY].interactive = true;
-      // mainContainer[indexX][indexY].id = uuid.v4().split('-')[0];
-      mainContainer[indexX][indexY].isResult = false;
-      mainContainer[indexX][indexY].image = constants.loserBackgroundImg;
-      mainContainer[indexX][indexY].text = 'L';
       mainContainer[indexX][indexY].x = xPos + xJump;
       mainContainer[indexX][indexY].y = yPos + yJump;
       mainContainer[indexX][indexY].indexX = indexX;
       mainContainer[indexX][indexY].indexY = indexY;
-      mainContainer[indexX][indexY].alpha = 1;
 
       // Background Image with choice of loser / winner.
       grids[indexX][indexY] = PIXI.Sprite.fromImage(uniqueImageGenerator(indexX, indexY));
@@ -104,7 +100,7 @@ function generateGrids() {
       grids[indexX][indexY].width = boxWidth;
       grids[indexX][indexY].position.set(0, 0);
 
-      // Sfratching area.
+      // Scratching area.
       gridScratches[indexX][indexY] = PIXI.Sprite.fromImage(constants.scratchImg);
       gridScratches[indexX][indexY].cacheAsBitmapboolean = true;
       gridScratches[indexX][indexY].interactive = true;
@@ -119,10 +115,27 @@ function generateGrids() {
       stage.addChild(mainContainer[indexX][indexY]);
 
       // Srpite overlay for the scratching area.
-      alphaSprite[indexX][indexY] = new PIXI.Graphics();
-      grids[indexX][indexY].mask = alphaSprite[indexX][indexY];
+      drawingMask[indexX][indexY] = new InverseDrawingMask(mainContainer[indexX][indexY]);
+      alphaSprite[indexX][indexY] = new PIXI.ParticleContainer();
+      particleViews[indexX][indexY] = new PIXI.particles.Emitter(alphaSprite[indexX][indexY],
+                                                                 constants.particleImg, configParticle);
+      grids[indexX][indexY].mask = drawingMask[indexX][indexY].getMaskSprite();
+      particleViews[indexX][indexY].emit = false;
+      mainContainer[indexX][indexY].addChild(alphaSprite[indexX][indexY]);
 
-      
+      // Comment the below lines to see only the Pixi graphic eraser.
+      // alpha[indexX][indexY] = new PIXI.Graphics();
+      // grids[indexX][indexY].mask = alpha[indexX][indexY];
+
+      // let texture = new PIXI.Texture.fromCanvas(renderer.view);
+      // let alpha = new PIXI.Sprite(texture);
+      // gridScratches[indexX][indexY].mask = alpha;
+      // alphaSprite[indexX][indexY] = new PIXI.ParticleContainer();
+      // particleViews[indexX][indexY] = new PIXI.particles.Emitter(alphaSprite[indexX][indexY],
+      //                                                            constants.particleImg, configParticle);
+
+      // mainContainer[indexX][indexY].addChild(alphaSprite[indexX][indexY]);
+
 
       // Add mouse and touch events to the grid boxes
       mainContainer[indexX][indexY].on('mouseover', mouseover);
@@ -138,6 +151,9 @@ function generateGrids() {
 
   return grids;
 }
+
+
+
 
 generateGrids();
 
@@ -168,9 +184,12 @@ function brush(event) {
   drawMouseLine(indexX, indexY);
 }
 
+let isDrawing = false;
 function mouseover(mouseData) {
   let indexX = mouseData.target.indexX;
   let indexY = mouseData.target.indexY;
+  particleViews[indexX][indexY].emit = true;
+  isDrawing = true;
   mainContainer[indexX][indexY].on('mousemove', brush);
   mainContainer[indexX][indexY].on('touchmove', brush);
 }
@@ -178,22 +197,36 @@ function mouseover(mouseData) {
 function mouseout(mouseData) {
   let indexX = mouseData.target.indexX;
   let indexY = mouseData.target.indexY;
-  mainContainer[indexX][indexY]._events['mousemove'] = null;
-  mainContainer[indexX][indexY]._events['touchmove'] = null;
+  particleViews[indexX][indexY].emit = false;
+  isDrawing = false;
+
+  // NOTE: Clear mouse events here only so that you don't have to check the events
+  // again on mousover events, since mouseomve and touchmove is called every time a
+  // mouse or touch geture is made irrespective of container location.
+  // mainContainer[indexX][indexY]._events['mousemove'] = null;
+  // mainContainer[indexX][indexY]._events['touchmove'] = null;
 }
 
 function drawMouseLine(indexX, indexY) {
-  // particleViews[indexX][indexY].emit = true;
-  // particleViews[indexX][indexY].updateOwnerPos(mouseCurrX, mouseCurrY);
-  alphaSprite[indexX][indexY].beginFill(STROKE_COLOUR);
-  alphaSprite[indexX][indexY].lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
-  alphaSprite[indexX][indexY].moveTo(mousePrevX, mousePrevY);
-  alphaSprite[indexX][indexY].lineTo(mouseCurrX, mouseCurrY);
-  alphaSprite[indexX][indexY].endFill();
+  if (isDrawing) {
+    particleViews[indexX][indexY].updateOwnerPos(mouseCurrX, mouseCurrY);
+    
+    // Comment the below lines to see only the Pixi graphic eraser.
+    // alpha[indexX][indexY].beginFill(STROKE_COLOUR);
+    // alpha[indexX][indexY].lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
+    // alpha[indexX][indexY].moveTo(mousePrevX, mousePrevY);
+    // alpha[indexX][indexY].lineTo(mouseCurrX, mouseCurrY);
+    // alpha[indexX][indexY].endFill();
+  }
 }
 
 animate();
 function animate() {
+  for (let indexX = 0; indexX < constants.GRID_X_COUNT; indexX++) {
+    for (let indexY = 0; indexY < constants.GRID_Y_COUNT; indexY++) {
+      drawingMask[indexX][indexY].update(indexX, indexY);
+    }
+  }
   requestAnimationFrame(animate);
   renderer.render(stage);
 };
