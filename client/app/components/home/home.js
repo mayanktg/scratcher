@@ -2,14 +2,10 @@ import angular from 'angular';
 import uiRouter from 'angular-ui-router';
 import homeComponent from './home.component';
 import PIXI from 'pixi.js';
-// import {particles} from 'pixi-particles';
+import {particles} from 'pixi-particles';
 import uuid from 'uuid';
 import lodash from 'lodash';
 import constants from '../../config/constants';
-
-// let configParticle = constants.configParticle;
-const STROKE_COLOUR = constants.backgroundColor;
-const STROKE_WIDTH = 20;
 
 let homeModule = angular.module('home', [
   uiRouter
@@ -30,6 +26,10 @@ let homeModule = angular.module('home', [
 .component('home', homeComponent)
 
 .name;
+
+let configParticle = constants.configParticle;
+const STROKE_COLOUR = constants.brushColor;
+const STROKE_WIDTH = 20;
 
 //setup Pixi renderer
 let windowWidth = window.innerWidth;
@@ -121,23 +121,8 @@ function generateGrids() {
       // Srpite overlay for the scratching area.
       alphaSprite[indexX][indexY] = new PIXI.Graphics();
       grids[indexX][indexY].mask = alphaSprite[indexX][indexY];
-      alphaSprite[indexX][indexY].beginFill();
-      alphaSprite[indexX][indexY].moveTo(0, 0);
-      alphaSprite[indexX][indexY].lineTo(0, 1);
-      alphaSprite[indexX][indexY].lineColor = STROKE_COLOUR;
-      alphaSprite[indexX][indexY].lineWidth = STROKE_WIDTH;
-      alphaSprite[indexX][indexY].endFill();
 
-
-      // alphaSprite[indexX][indexY] = new PIXI.ParticleContainer();
-      // gridScratches[indexX][indexY].mask = new InverseDrawingMask(mainContainer[indexX][indexY])..getMaskSprite();
-      // particleViews[indexX][indexY] = new PIXI.particles.Emitter(alphaSprite[indexX][indexY],
-      //                                                            constants.particelImg, configParticle);
-      // particleViews[indexX][indexY].emit = true;
-      // particleViews[indexX][indexY].interactive = true;
-      // mainContainer[indexX][indexY].addChild(alphaSprite[indexX][indexY]);
-
-
+      
 
       // Add mouse and touch events to the grid boxes
       mainContainer[indexX][indexY].on('mouseover', mouseover);
@@ -151,15 +136,6 @@ function generateGrids() {
     yJump += boxWidth + gap;
   }
 
-  // Pick three random elements and change their isResult key to true
-  // for (let index = 0; index < constants.GRID_RESULT_COUNT; index++) {
-  //   let uniqueIndexX = uniqueIndexGenerator(0, constants.GRID_X_COUNT);
-  //   let uniqueIndexY = uniqueIndexGenerator(0, constants.GRID_Y_COUNT);
-  //   mainContainer[uniqueIndexX][uniqueIndexY].isResult = true;
-  //   mainContainer[uniqueIndexX][uniqueIndexY].image = constants.winnerBackgroundImg;
-  //   mainContainer[uniqueIndexX][uniqueIndexY].text = 'W';
-  // }
-  console.log(mainContainer);
   return grids;
 }
 
@@ -173,10 +149,10 @@ brushImage.data[1] = 1;
 brushImage.data[2] = 1;
 brushImage.data[3] = 1;
 
-var mousePrevX;
-var mousePrevY;
-var mouseCurrX;
-var mouseCurrY;
+let mousePrevX;
+let mousePrevY;
+let mouseCurrX;
+let mouseCurrY;
 function brush(event) {
   // Touch event is stored in touches[0] whereas mouse event in Layer.
   let mouseX = event.data.originalEvent.layerX || event.data.originalEvent.touches[0].pageX;
@@ -209,11 +185,10 @@ function mouseout(mouseData) {
 function drawMouseLine(indexX, indexY) {
   // particleViews[indexX][indexY].emit = true;
   // particleViews[indexX][indexY].updateOwnerPos(mouseCurrX, mouseCurrY);
-  alphaSprite[indexX][indexY].beginFill();
+  alphaSprite[indexX][indexY].beginFill(STROKE_COLOUR);
+  alphaSprite[indexX][indexY].lineStyle(STROKE_WIDTH, STROKE_COLOUR, 1);
   alphaSprite[indexX][indexY].moveTo(mousePrevX, mousePrevY);
   alphaSprite[indexX][indexY].lineTo(mouseCurrX, mouseCurrY);
-  alphaSprite[indexX][indexY].lineColor = STROKE_COLOUR;
-  alphaSprite[indexX][indexY].lineWidth = STROKE_WIDTH;
   alphaSprite[indexX][indexY].endFill();
 }
 
